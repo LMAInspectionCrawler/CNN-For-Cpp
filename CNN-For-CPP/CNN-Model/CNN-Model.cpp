@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "CNN_Model.h"
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
@@ -11,30 +12,9 @@
 
 using namespace std;
 
-class ConvolutionalNeuralNetwork {
-	public:
-	
-	/**
-		Changes the CNN's weights, biases, and kernal values.
-
-		@param changes A list of values to add to the current weights, biases, and kernal values
-			(weight0_changes, weight1_changes, ..., bias0_changes, ... kernal0_changes, ...) -> (0.13, 0.04, -0.05)
-	*/
-	void updateParams(vector<double> changes) {
-		//TODO changes weights, biases, and kernal values
-		cout << "Parameters updated" << endl;
-	}
-};
-
 // Function headers
 // TODO: copy function headers over to their own file and just include it
-ConvolutionalNeuralNetwork trainCNN(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledSet, double desiredAccuracy);
-ConvolutionalNeuralNetwork gradientDescentStep(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledTrainingSet);
-vector<double> backpropagation(ConvolutionalNeuralNetwork cnn, cv::Mat image, string imageLabel);
-double testAccuracy(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledTestingSet);
-vector<double> averageAdjustments(vector<vector<double>> adjustments);
-vector<double> testCNN(ConvolutionalNeuralNetwork cnn, cv::Mat image);
-string classify(vector<double> scores);
+
 
 int main()
 {
@@ -54,7 +34,7 @@ int main()
 	There is a limit to the amount of gradient descent steps possible.
 
 	@param cnn The cnn model
-	@param labeledSet A vector of images with their accompanying labels {(img1, label1), (img2, label2), ...}
+	@param labeledSet A vector of images with their accompanying labels {(img1, label1), (img2, label2), ...}. Needs to be larger than six images.
 	@param desiredAccuracy The training will not step until this desiredAccuracy is met our the maximum amount of steps is reached
 	@return The cnn model with the updated weights, biases, and kernal values
 */
@@ -64,9 +44,9 @@ ConvolutionalNeuralNetwork trainCNN(ConvolutionalNeuralNetwork cnn, vector<tuple
 	double accuracy = 0.0;
 
 	// Split labeled set into 5/6 for training and 1/6 for testing accuracy
-	vector<tuple<cv::Mat, string>> labeledTrainingSet;
-	vector<tuple<cv::Mat, string>> labeledTestingSet;
-	// TODO: split labeledSet into the vectors above
+	size_t const oneSixthSize = labeledSet.size() / 6;
+	vector<tuple<cv::Mat, string>> labeledTrainingSet(labeledSet.begin(), labeledSet.begin() + (5 * oneSixthSize));
+	vector<tuple<cv::Mat, string>> labeledTestingSet(labeledSet.begin() + (5 * oneSixthSize), labeledSet.end());
 
 	int stepCnt = 0;
 	while (accuracy < desiredAccuracy && stepCnt < MAX_STEPS) {
@@ -138,7 +118,7 @@ double testAccuracy(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string
 
 		vector<double> scores = testCNN(cnn, image);
 		string classification = classify(scores);
-		if (classification == label) {	// TODO: verify that == compares string values correctly
+		if (classification.compare(label) == 0) {
 			correct++;
 		}
 	}
@@ -173,12 +153,12 @@ vector<double> averageAdjustments(vector<vector<double>> adjustments) {
 	Tests a CNN model by generating scores of classifications for an image.
 
 	@param cnn The cnn model
-	@param images An image to classify
+	@param image An image to classify
 	@return A list of scores for image classification (0.89, 0.02, ...)
 */
 vector<double> testCNN(ConvolutionalNeuralNetwork cnn, cv::Mat image) {
 	vector<double> scores;
-	// TODO plan out method
+	scores = cnn.forwardPass(image);
 	return scores;
 }
 
@@ -190,7 +170,14 @@ vector<double> testCNN(ConvolutionalNeuralNetwork cnn, cv::Mat image) {
 	@return A classification for one image (ex. "1")
 */
 string classify(vector<double> scores) {
-	string classification = "0";
-	// TODO plan out method
+	int classIndex = -1;
+	double largestScore = 0.0;
+	for (int i = 0; i < scores.size(); i++) {
+		if (scores.at(i) > largestScore) {
+			largestScore = scores.at(i);
+			classIndex = i;
+		}
+	}
+	string classification = to_string(classIndex);
 	return classification;
 }
