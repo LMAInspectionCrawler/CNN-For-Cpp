@@ -7,10 +7,82 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <memory>
 
 using namespace std;
 
+class CNNLayer {
+public:
+	CNNLayer() {}
+
+	virtual cv::Mat execute(cv::Mat image) {
+		cout << "Execute function called on parent class with no implementation." << endl;
+		return cv::Mat_<int>(0,0);
+	}
+};
+
+class ConvolutionalLayer : public CNNLayer {
+protected:
+	int filterNum, subsecWidth, subsecHeight, slideX, slideY;
+	vector<cv::Mat> filters;
+
+public:
+	ConvolutionalLayer(int myFilterNum, int mySubsecWidth, int mySubsecHeight, int mySlideX, int mySlideY):CNNLayer()
+	{
+		filterNum = myFilterNum;
+		subsecWidth = mySubsecWidth;
+		subsecHeight = mySubsecHeight;
+		slideX = mySlideX;
+		slideY = mySlideY;
+
+		initializeFilters();
+	}
+
+	void initializeFilters() {
+		double low_inc = 0.1;
+		double high_exc = 1.0;
+		for (int i = 0; i < filterNum; i++) {
+			cv::Mat newFilterRandom(2, 4, CV_64FC1);
+			randu(newFilterRandom, low_inc, high_exc);
+			filters.push_back(newFilterRandom);
+		}
+	}
+
+	cv::Mat execute(cv::Mat image) {
+		cv::Mat activationMap;
+		int x = 0;
+		int y = 0;
+
+
+		cout << "Test execution function" << endl;
+		return activationMap; // TEMP
+
+		while (y < image.rows) {
+			while (x < image.cols) {
+				cv::Mat imgSubsection = cv::Mat(image, cv::Rect(x, y, subsecWidth, subsecHeight));
+				cv::Mat zChannels = cv::Mat::ones(1, 1, CV_64FC(filters.size()));
+				for (int z = 0; z < filters.size(); z++) {
+					double dotProduct = imgSubsection.dot(filters.at(z));
+					zChannels.col(x).row(y).setTo(dotProduct);
+					// TODO: figure out how to add these dot products into a 3D activation map
+				}
+				x += slideX;
+			}
+			y += slideY;
+		}
+
+		// TODO: I may want to rotate the activation map to make more sense (ie. keep the x dimension as the image's x dimension, not the filterNum)
+
+		return activationMap;
+	}
+};
+
 class ConvolutionalNeuralNetwork {
+protected:
+	// Note: I used shared_ptr to avoid memory leaks. I first tried unique_ptr, but you can't have a vector of unique_ptrs.
+	// Please refer to https://stackoverflow.com/questions/16126578/vectors-and-polymorphism-in-c
+	vector<shared_ptr<CNNLayer>> layers;
+
 public:
 
 	/**
@@ -33,6 +105,12 @@ public:
 	vector<double> forwardPass(cv::Mat image) {
 		vector<double> scores;
 		// TODO plan out method
+		
+		for (int layerIndex = 0; layerIndex < layers.size(); layerIndex++) {
+			shared_ptr<CNNLayer> nextLayer = layers.at(layerIndex);
+			nextLayer->execute(image);
+		}
+		
 		return scores;
 	}
 
@@ -55,7 +133,9 @@ public:
 	@param slideY The distance in the y direction to slide over (typically it's the same as slideX)
 	*/
 	void addConvolutionalLayer(int filterNum, int subsecWidth, int subsecHeight, int slideX, int slideY) {
-		// TODO plan out method
+		//CNNLayer *layer = new ConvolutionalLayer(filterNum, subsecWidth, subsecHeight, slideX, slideY);
+		shared_ptr<CNNLayer> layer(new ConvolutionalLayer(filterNum, subsecWidth, subsecHeight, slideX, slideY));
+		layers.push_back(layer);
 	}
 
 	/**
@@ -105,7 +185,6 @@ public:
 
 };
 
-// TODO: reference additional headers your program requires here
 ConvolutionalNeuralNetwork trainCNN(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledSet, double desiredAccuracy);
 ConvolutionalNeuralNetwork gradientDescentStep(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledTrainingSet);
 vector<double> backpropagation(ConvolutionalNeuralNetwork cnn, cv::Mat image, string imageLabel);

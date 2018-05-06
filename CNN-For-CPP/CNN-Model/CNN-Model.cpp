@@ -12,13 +12,15 @@
 
 using namespace std;
 
-// Function headers
-// TODO: copy function headers over to their own file and just include it
-
-
 int main()
 {
+
+	cv::Mat tinyMatrix = (cv::Mat_<int>(2, 4) << 1, 2, 3, 4, 5, 6, 7, 8);
+	cout << "tinyMatrix = " << endl << " " << tinyMatrix << endl << endl;
+
 	ConvolutionalNeuralNetwork cnn;
+	cnn.addConvolutionalLayer(3, 2, 2, 1, 1);
+	cnn.forwardPass(tinyMatrix);
 	// TODO: Train CNN
 	// TODO: Export CNN model
 	// TODO: Import CNN model
