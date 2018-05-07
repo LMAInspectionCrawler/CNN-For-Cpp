@@ -15,7 +15,7 @@ class CNNLayer {
 public:
 	CNNLayer() {}
 
-	virtual cv::Mat execute(cv::Mat image) {
+	virtual vector<cv::Mat> execute(vector<cv::Mat> image) {
 		cout << "Execute function called on parent class with no implementation." << endl;
 		return cv::Mat_<int>(0,0);
 	}
@@ -23,57 +23,75 @@ public:
 
 class ConvolutionalLayer : public CNNLayer {
 protected:
-	int filterNum, subsecWidth, subsecHeight, slideX, slideY;
-	vector<cv::Mat> filters;
+	int filterNum, subsecWidth, subsecHeight, slideX, slideY, channels;
+	vector<vector<cv::Mat>> filters;
 
 public:
-	ConvolutionalLayer(int myFilterNum, int mySubsecWidth, int mySubsecHeight, int mySlideX, int mySlideY):CNNLayer()
+	ConvolutionalLayer(int myFilterNum, int mySubsecWidth, int mySubsecHeight, int mySlideX, int mySlideY, int myChannels):CNNLayer()
 	{
 		filterNum = myFilterNum;
 		subsecWidth = mySubsecWidth;
 		subsecHeight = mySubsecHeight;
 		slideX = mySlideX;
 		slideY = mySlideY;
+		channels = myChannels;
 
 		initializeFilters();
 	}
 
 	void initializeFilters() {
-		double low_inc = 0.1;
+		double low_inc = 0.01;
 		double high_exc = 1.0;
 		for (int i = 0; i < filterNum; i++) {
-			cv::Mat newFilterRandom(2, 4, CV_64FC1);
-			randu(newFilterRandom, low_inc, high_exc);
-			filters.push_back(newFilterRandom);
+			// Each filter has a depth of the same amount as the input depth (RGB = 3)
+			vector<cv::Mat> newFilter;
+			for (int channelIndex = 0; channelIndex < channels; channelIndex++) {
+				cv::Mat newFilterChannelRandom(subsecHeight, subsecWidth, CV_64FC1);
+				randu(newFilterChannelRandom, low_inc, high_exc);
+				newFilter.push_back(newFilterChannelRandom);
+			}
+			filters.push_back(newFilter);
 		}
 	}
 
-	cv::Mat execute(cv::Mat image) {
-		cv::Mat activationMap;
+	vector<cv::Mat> execute(vector<cv::Mat> image) {
+		vector<cv::Mat> activationMap3D;
 		int x = 0;
 		int y = 0;
+		int imageHeight = image.at(0).rows;
+		int imageWidth = image.at(0).cols;
 
+		for (int i = 0; i < filters.size(); i++) {
+			cv::Mat activationMap2D = cv::Mat::zeros(imageHeight, imageWidth, CV_64FC1);
+			activationMap3D.push_back(activationMap2D);
+		}
 
-		cout << "Test execution function" << endl;
-		return activationMap; // TEMP
+		while (y + subsecHeight <= imageHeight) {
+			while (x + subsecWidth <= imageWidth) {
 
-		while (y < image.rows) {
-			while (x < image.cols) {
-				cv::Mat imgSubsection = cv::Mat(image, cv::Rect(x, y, subsecWidth, subsecHeight));
-				cv::Mat zChannels = cv::Mat::ones(1, 1, CV_64FC(filters.size()));
-				for (int z = 0; z < filters.size(); z++) {
-					double dotProduct = imgSubsection.dot(filters.at(z));
-					zChannels.col(x).row(y).setTo(dotProduct);
-					// TODO: figure out how to add these dot products into a 3D activation map
+				for (int filterIndex = 0; filterIndex < filters.size(); filterIndex++) {
+					cout << "filters.at(" << filterIndex << "): " << endl;
+
+					double dotProduct = 0.0;
+					for (int imgChannel = 0; imgChannel < channels; imgChannel++) {
+						cout << "Channel: " << imgChannel << endl << filters.at(filterIndex).at(imgChannel) << endl;
+						cv::Mat subImage = cv::Mat(image.at(imgChannel), cv::Rect(x, y, subsecWidth, subsecHeight));
+						dotProduct += subImage.dot(filters.at(filterIndex).at(imgChannel));
+					}
+					activationMap3D.at(filterIndex).col(x).row(y) = dotProduct;
 				}
 				x += slideX;
 			}
 			y += slideY;
 		}
 
-		// TODO: I may want to rotate the activation map to make more sense (ie. keep the x dimension as the image's x dimension, not the filterNum)
+		cout << "Activation Map:" << endl;
+		for (int i = 0; i < activationMap3D.size(); i++) {
+			cout << "Layer: " << i << endl;
+			cout << activationMap3D.at(i) << endl << endl;
+		}
 
-		return activationMap;
+		return activationMap3D;
 	}
 };
 
@@ -105,13 +123,31 @@ public:
 	vector<double> forwardPass(cv::Mat image) {
 		vector<double> scores;
 		// TODO plan out method
+		vector<cv::Mat> imageChannels = prepareImage(image);
 		
 		for (int layerIndex = 0; layerIndex < layers.size(); layerIndex++) {
 			shared_ptr<CNNLayer> nextLayer = layers.at(layerIndex);
-			nextLayer->execute(image);
+			imageChannels = nextLayer->execute(imageChannels);
 		}
 		
 		return scores;
+	}
+
+	/**
+	Since OpenCV's support for 3D Mats is very bad and limited to a depth of 4, we convert the image into a vector
+	of 2D Mats
+
+	@param image An RGB image to be classified
+	*/
+	vector<cv::Mat> prepareImage(cv::Mat image) {
+		if (image.channels() == 3) {
+			vector<cv::Mat> bgr_channels;
+			split(image, bgr_channels);
+			return bgr_channels;
+		}
+		vector<cv::Mat> imageLayers;
+		imageLayers.push_back(image);
+		return imageLayers;
 	}
 
 
@@ -132,9 +168,9 @@ public:
 	@param slideX The distance in the x direction to slide over (typically 1-4 is a good number)
 	@param slideY The distance in the y direction to slide over (typically it's the same as slideX)
 	*/
-	void addConvolutionalLayer(int filterNum, int subsecWidth, int subsecHeight, int slideX, int slideY) {
+	void addConvolutionalLayer(int filterNum, int subsecWidth, int subsecHeight, int slideX, int slideY, int channels) {
 		//CNNLayer *layer = new ConvolutionalLayer(filterNum, subsecWidth, subsecHeight, slideX, slideY);
-		shared_ptr<CNNLayer> layer(new ConvolutionalLayer(filterNum, subsecWidth, subsecHeight, slideX, slideY));
+		shared_ptr<CNNLayer> layer(new ConvolutionalLayer(filterNum, subsecWidth, subsecHeight, slideX, slideY, channels));
 		layers.push_back(layer);
 	}
 

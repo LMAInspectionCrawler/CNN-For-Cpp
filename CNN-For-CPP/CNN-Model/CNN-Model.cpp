@@ -15,11 +15,11 @@ using namespace std;
 int main()
 {
 
-	cv::Mat tinyMatrix = (cv::Mat_<int>(2, 4) << 1, 2, 3, 4, 5, 6, 7, 8);
-	cout << "tinyMatrix = " << endl << " " << tinyMatrix << endl << endl;
+	cv::Mat tinyMatrix = (cv::Mat_<double>(2, 4) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
+	cout << "tinyMatrix:" << endl << " " << tinyMatrix << endl;
 
 	ConvolutionalNeuralNetwork cnn;
-	cnn.addConvolutionalLayer(3, 2, 2, 1, 1);
+	cnn.addConvolutionalLayer(3, 2, 2, 1, 1, 1);
 	cnn.forwardPass(tinyMatrix);
 	// TODO: Train CNN
 	// TODO: Export CNN model
