@@ -2,7 +2,6 @@
 //
 
 #include "stdafx.h"
-#include "CNN_Model.h"
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
@@ -10,23 +9,35 @@
 #include <vector>
 #include <tuple>
 
+#include "ConvolutionalNeuralNetwork.h"
+
 using namespace std;
+
+ConvolutionalNeuralNetwork trainCNN(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledSet, double desiredAccuracy);
+ConvolutionalNeuralNetwork gradientDescentStep(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledTrainingSet);
+vector<double> backpropagation(ConvolutionalNeuralNetwork cnn, cv::Mat image, string imageLabel);
+double testAccuracy(ConvolutionalNeuralNetwork cnn, vector<tuple<cv::Mat, string>> labeledTestingSet);
+vector<double> averageAdjustments(vector<vector<double>> adjustments);
+vector<double> testCNN(ConvolutionalNeuralNetwork cnn, cv::Mat image);
+string classify(vector<double> scores);
 
 int main()
 {
 
 	cv::Mat tinyMatrix = (cv::Mat_<double>(2, 4) << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
-	cout << "tinyMatrix:" << endl << " " << tinyMatrix << endl;
+	cout << "tinyMatrix:" << endl << " " << tinyMatrix << endl << endl;
 
 	ConvolutionalNeuralNetwork cnn;
 	cnn.addConvolutionalLayer(3, 2, 2, 1, 1, 1);
-	cnn.forwardPass(tinyMatrix);
-	// TODO: Train CNN
-	// TODO: Export CNN model
-	// TODO: Import CNN model
-	// TODO: Test CNN
+	cnn.addActivationLayer("RELU");
+	cnn.addPoolingLayer(2, 2, 1, 1);
+	cnn.addFullyConnectedLayer(3);
 
-	cout << "This library is not functional yet" << endl;
+
+	// trainCNN(cnn, labeledSet, .9);
+	cnn.forwardPass(tinyMatrix);
+	cnn.printNetwork();
+
 	system("pause");
     return 0;
 }

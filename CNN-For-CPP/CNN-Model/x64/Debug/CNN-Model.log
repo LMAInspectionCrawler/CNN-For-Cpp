@@ -1,3 +1,4 @@
 ﻿  CNN-Model.cpp
+c:\users\27mar\desktop\cnn-for-cpp\cnn-for-cpp\cnn-model\convolutionalneuralnetwork.h(53): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
   CNN-Model.vcxproj -> C:\Users\27mar\Desktop\CNN-For-Cpp\CNN-For-Cpp\x64\Debug\CNN-Model.exe
   CNN-Model.vcxproj -> C:\Users\27mar\Desktop\CNN-For-Cpp\CNN-For-Cpp\x64\Debug\CNN-Model.pdb (Full PDB)
