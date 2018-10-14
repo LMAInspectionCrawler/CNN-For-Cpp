@@ -35,7 +35,7 @@ int main()
 
 
 	// trainCNN(cnn, labeledSet, .9);
-	cnn.forwardPass(tinyMatrix);
+	vector<double> classification = cnn.forwardPass(tinyMatrix);
 	cnn.printNetwork();
 
 	system("pause");
@@ -107,7 +107,16 @@ ConvolutionalNeuralNetwork gradientDescentStep(ConvolutionalNeuralNetwork cnn, v
 */
 vector<double> backpropagation(ConvolutionalNeuralNetwork cnn, cv::Mat image, string imageLabel) {
 	vector<double> changes;
-	// TODO plan out method
+	// TODO implement this function
+
+	// Determine the ideal scores
+	
+	// For each classification, figure out how to change the kernal values, weights, and biases
+
+	// TODO: watch the video about partial derivatives again. Can you figure that out once and use it for the entire training,
+	// or do you need redo it for each image or something? Maybe use another function that returns a vector<vector<double>
+	// where the first vector<double> can be for kernal values, the second for biases, and the third for weights. And the
+	// double values is how much that value affects the cost function
 	return changes;
 }
 
